@@ -19,16 +19,18 @@ struct Card
     unsigned int rank;
 };
 
+//generic linked list
 struct Node
 {
     void *data;
     struct Node *next;
 };
 
-void stack_push(struct Node **top, void *data, size_t data_size)
+//insert element into list
+void push(struct Node **top, void *data, size_t data_size)
 {
     //create a new node with memory size a Node
-    struct Node * new_node = (struct Node *) mallac(sizeof(struct Node));
+    struct Node *new_node = (struct Node *) malloc(sizeof(struct Node));
     
     //allocate new_nodes data's memory equal to memory size of Card
     new_node->data = malloc(data_size);
@@ -41,17 +43,26 @@ void stack_push(struct Node **top, void *data, size_t data_size)
     *top = new_node;
 }
 
-void stack_pop()
+//remove top element
+void pop(struct Node **top, void *data_out, size_t data_size)
 {
+    //check if the top is empty, exit if empty
+    if(*top == NULL)
+    {
+        return;
+    }
 
+    memcpy(data_out, (*top)->data, data_size);
+    struct Node * temp = *top;
+    *top = (*top)->next;
+    
+    //frees up memory
+    free(temp->data);
+    free(temp);
 }
 
-void stack_top()
-{
-
-}
-
-void stack_last()
+//accesses top element
+void top(struct Node **top, void *data, size_t data_size)
 {
 
 }
@@ -74,7 +85,7 @@ void print_deck(struct Card deck[])
 {
     for(int i = 0; i < 52; i++)
     {
-        printf("%u of %u\n", deck[i].suit, deck[i].rank);
+        printf("%u of %u\n", deck[i].suit, deck[i].rank);    
     }
 }
 
@@ -97,6 +108,7 @@ void shuffle_deck(struct Card deck[], int int_deck_size)
     }
 }
 
+//uses stack functions to 
 void stack_card_deck(struct card deck[])
 {
 
