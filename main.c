@@ -44,7 +44,7 @@ void push(struct Node **top, void *data, size_t data_size)
 }
 
 //remove top element
-void pop(struct Node **top, void *data_out, size_t data_size)
+void pop(struct Node **top)
 {
     //exit if top is empty
     if(*top == NULL)
@@ -52,7 +52,6 @@ void pop(struct Node **top, void *data_out, size_t data_size)
         return;
     }
 
-    memcpy(data_out, (*top)->data, data_size);
     struct Node * temp = *top;
     *top = (*top)->next;
     
@@ -87,14 +86,6 @@ void intialize_deck(struct Card deck[], int int_max_suit, int int_max_rank)
     }
 }
 
-void print_deck(struct Card deck[])
-{
-    for(int i = 0; i < 52; i++)
-    {
-        printf("%u of %u\n", deck[i].suit, deck[i].rank);    
-    }
-}
-
 //generic swap function
 void swap(void *initial_position, void *new_position, size_t size)
 {
@@ -115,29 +106,43 @@ void shuffle_deck(struct Card deck[], int int_deck_size)
 }
 
 //uses stack functions to 
-void stack_card_deck(struct card deck[])
+void stack_card_deck(struct Node **stack_deck, struct Card deck[], int int_max_deck_size)
 {
-
+    for(int i = 0; i < int_max_deck_size; i++)
+    {
+        push(stack_deck, &deck[i], sizeof(struct Card));
+    }
 }
 
-//n players, m chips per bag, o seed randomizer
+void print_stack_card_deck(struct Node **stack_deck)
+{
+    struct Card card_current;
+       
+    while(*stack_deck != NULL)
+    {
+        top(*stack_deck, &card_current, sizeof(struct Card));
+        printf("%u of %u\n", card_current.suit, card_current.rank);
+        pop(stack_deck);
+    }
+}
+
+//n players, m chips per bag, o seed for randomizer
 int main()
 {
     int int_max_deck_size = 4 * 13;
-    struct Card card_deck[int_max_deck_size];
+    struct Card card_deck[int_max_deck_size];       //much easier to shuffle while an array
+    struct Node *stack_deck = NULL;                 //much easier to deal with a deck as a linked list/stack
 
-    //seed's randomizer
+    //seed's randomizer, NULL for the mean time
     srand(time(NULL));
 
-    printf("Before Shuffle\n");
-    intialize_deck(card_deck, 4,13);
-    print_deck(card_deck);
-
-    printf("\n");
-    printf("\n");
-    printf("After Shuffle\n");
+    intialize_deck(card_deck, 4, 13);
     shuffle_deck(card_deck, int_max_deck_size);
-    print_deck(card_deck);
+
+    //printf("here in main\n");
+
+    stack_card_deck(&stack_deck, card_deck, int_max_deck_size);
+    print_stack_card_deck(&stack_deck);
 
     return 0;
 }
