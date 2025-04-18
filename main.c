@@ -40,18 +40,21 @@ struct Player
     struct Hand hand_right;
     int int_chips_to_eat;
     int int_player_number;
-    int bool_is_dealer;
+    //int bool_is_dealer;
+    int bool_is_their_turn;
 };
 
 //global declarations
 struct Card greasy_card;
 struct Node *stack_deck = NULL;     //much easier to deal with a deck as a linked list/stack
 struct Card card_deck[52];          //much easier to shuffle while an array
-int INT_CHIPS_IN_BAG = 50;
+int MAX_CHIPS_PER_BAG;
+int INT_CHIPS_IN_BAG;
 int INT_BAGS_EATEN = 0;
 int END_GAME = false; 
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t mutex_turn = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t cond_turn = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t mutex_chips_bag = PTHREAD_MUTEX_INITIALIZER;
 int current_turn = 0;
 int NUM_PLAYERS;
 
@@ -267,7 +270,7 @@ void discard_card(struct Player *player)
 
 void compare_cards(struct Player *player)
 {
-    printf("The Player is looking at their hand\n");
+    printf("Player %d is looking at their hand\n", player->int_player_number);
     //check left hand matches rank with greasy card
     if(player->hand_left.card.rank == greasy_card.rank)
     {
@@ -288,50 +291,84 @@ void compare_cards(struct Player *player)
         return;
     }
 
-    printf("The player has checked, there was no matches\n");
+    printf("Player %d has checked, there was no matches\n", player->int_player_number);
+}
+
+void eat_chips(struct Player *player)
+{
+    static pthread_mutex_t chip_mutex = PTHREAD_MUTEX_INITIALIZER;
+    int chips_eaten = 0;
+    int chips_to_eat = rand() % 5 + 1;
+
+    pthread_mutex_lock(&chip_mutex);
+    if(INT_CHIPS_IN_BAG > 0)
+    {
+
+        if(chips_to_eat >= INT_CHIPS_IN_BAG)
+        {
+            chips_to_eat = INT_CHIPS_IN_BAG;
+            INT_BAGS_EATEN++;
+            INT_CHIPS_IN_BAG = MAX_CHIPS_PER_BAG;
+            printf("Player %d tried to eat more chips than what was left in the bag, so he finished the bag and opened a new bag ", player->int_player_number);
+            printf("The group has so far eaten %d bags of chip(s)\n", INT_BAGS_EATEN);
+        }
+
+        INT_CHIPS_IN_BAG -= chips_to_eat;
+        chips_eaten = chips_to_eat;
+        player->int_chips_to_eat = chips_eaten;
+        printf("Player %d eats %d chip(s). Chips left: %d\n", player->int_player_number, chips_to_eat, INT_CHIPS_IN_BAG);
+    }
+
+    pthread_mutex_unlock(&chip_mutex);
 }
 
 void *player_turn(void *arg)
 {
     struct Player *player = (struct Player *)arg;
+
     while(!END_GAME)
     {
-        pthread_mutex_lock(&mutex);
+        //lock the turn mutex
+        pthread_mutex_lock(&mutex_turn);
 
-        //wait for your turn
+
+        //wait until it's the player's turn
         while(current_turn != player->int_player_number && !END_GAME)
         {
-            pthread_cond_wait(&cond, &mutex);
+            pthread_cond_wait(&cond_turn, &mutex_turn);
+            eat_chips(player);
+            //usleep(500000);
+            //pthread_mutex_lock(&mutex_turn);
         }
-
+        
         if(END_GAME)
         {
-            pthread_mutex_unlock(&mutex);
+            pthread_mutex_unlock(&mutex_turn);
             break;
         }
 
-        printf("Player %zu's turn\n", player->int_player_number);
+        //its a player's turn!
         draw_card(player);
         compare_cards(player);
-        
-        if(!END_GAME)
-        {
-            discard_card(player);
-        }
+        discard_card(player);
 
-        current_turn = (current_turn+1) % NUM_PLAYERS;
-        pthread_cond_broadcast(&cond);
+        //move to the next player's turn
+        current_turn = (current_turn + 1) % NUM_PLAYERS;
 
-        pthread_mutex_unlock(&mutex);
+        pthread_cond_broadcast(&cond_turn);
+        pthread_mutex_unlock(&mutex_turn);
     }
 
-    pthread_exit(NULL);
+    return NULL;
 }
+
+
 
 //n players, m chips per bag, o seed for randomizer
 int main()
 {
-    NUM_PLAYERS = 2;
+    NUM_PLAYERS = 4;
+    MAX_CHIPS_PER_BAG = 20;
     pthread_t threads[NUM_PLAYERS];
     struct Player players[NUM_PLAYERS];
 
@@ -340,25 +377,32 @@ int main()
     //seed's randomizer, NULL for the mean time
     srand(time(NULL));
 
-    intialize_deck(card_deck, 4, 13);
-    shuffle_deck(card_deck, 52);
-    stack_card_deck(card_deck, 52);
-    
-    //randomly decide dealer later
-    declare_greasy_card(&players[0]);
-    
-    //dealt a card
-    draw_card(&players[0]);
 
     for(int i = 0; i < NUM_PLAYERS; i++)
     {
         players[i].hand_left.bool_is_empty = true;
         players[i].hand_right.bool_is_empty = true;
-        players[i].bool_is_dealer == (i == 0);
         players[i].int_player_number = i;
+    }
 
+    //pick a random player to be the dealer
+    int dealer_index = rand() % NUM_PLAYERS;
+    intialize_deck(card_deck, 4, 13);
+    printf("Player %d is the dealer!\n", dealer_index);
+    printf("Player %d is opening a bag of chips\n", dealer_index);
+    INT_CHIPS_IN_BAG = MAX_CHIPS_PER_BAG;
+    printf("Player %d is now shuffling the deck...\n", dealer_index);
+    shuffle_deck(card_deck, 52);
+    stack_card_deck(card_deck, 52);
+    declare_greasy_card(&players[dealer_index]);
+    printf("Player %d is now dealing the cards...\n", dealer_index);
+
+    for(int i = 0; i < NUM_PLAYERS; i++)
+    {
+        draw_card(&players[i]);
         pthread_create(&threads[i], NULL, player_turn, &players[i]);
     }
+    
     
     for(int i = 0; i < NUM_PLAYERS; i++)
     {
