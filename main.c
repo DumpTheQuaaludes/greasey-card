@@ -9,12 +9,6 @@
 #define true 1
 #define false 0
 
-int INT_CHIPS_IN_BAG = 50;
-int INT_BAGS_EATEN = 0;
-int END_GAME = false; 
-
-//checking if I pushed to working-branch
-
 enum Suit
 {
     //0   1       2       3      4
@@ -53,6 +47,14 @@ struct Player
 struct Card greasy_card;
 struct Node *stack_deck = NULL;     //much easier to deal with a deck as a linked list/stack
 struct Card card_deck[52];            //much easier to shuffle while an array
+int INT_CHIPS_IN_BAG = 50;
+int INT_BAGS_EATEN = 0;
+int END_GAME = false; 
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+int current_turn = 0;
+int NUM_PLAYERS;
+
 
 //insert element into list
 void push(struct Node **top, void *data, size_t data_size)
@@ -69,6 +71,11 @@ void push(struct Node **top, void *data, size_t data_size)
     //updates stack by moving the value down
     new_node->next = *top;
     *top = new_node;
+}
+
+void push_back(struct Node **back, void *data, size_t data_size)
+{
+
 }
 
 //remove top element
@@ -100,6 +107,15 @@ void top(struct Node *top, void *data_out, size_t data_size)
     memcpy(data_out , top->data, data_size);
 }
 
+//generic swap function
+void swap(void *initial_position, void *new_position, size_t size)
+{
+    char temp[size];
+    memcpy(temp, initial_position, size);
+    memcpy(initial_position, new_position, size);
+    memcpy(new_position, temp, size);
+}
+
 void intialize_deck(struct Card deck[], int int_max_suit, int int_max_rank)
 {
     int int_card_count = 0;
@@ -112,15 +128,6 @@ void intialize_deck(struct Card deck[], int int_max_suit, int int_max_rank)
             int_card_count++;
         }
     }
-}
-
-//generic swap function
-void swap(void *initial_position, void *new_position, size_t size)
-{
-    char temp[size];
-    memcpy(temp, initial_position, size);
-    memcpy(initial_position, new_position, size);
-    memcpy(new_position, temp, size);
 }
 
 void shuffle_deck(struct Card deck[], int int_deck_size)
@@ -142,11 +149,11 @@ void stack_card_deck(struct Card deck[], int int_max_deck_size)
     }
 }
 
-void declare_greasy_card()
+void declare_greasy_card(struct Player *player)
 {
     top(stack_deck, &greasy_card, sizeof(struct Card));
     pop(&stack_deck);
-    printf("The Greasy card is %zu of %d\n", greasy_card.rank, greasy_card.suit);
+    printf("Player %d has drawn the Greasy card, which is %zu of %d\n", player->int_player_number, greasy_card.rank, greasy_card.suit);
 }
 
 void draw_card(struct Player *player)
@@ -154,7 +161,7 @@ void draw_card(struct Player *player)
     //choose a hand, left or right hand
     //give that hand a card
     int int_random_hand = rand() % 2; // 0 = left, 1 = right
-    printf("The player has drawn a card... ");
+    printf("Player %d has drawn a card... ", player->int_player_number);
 
     //random declares left
     if(int_random_hand == 0)
@@ -214,7 +221,7 @@ void discard_card(struct Player *player)
     {
         //place the card at the bottom of the deck
         //empty the player's left hand
-        printf("The Player chose their left hand and discarded the %zu of %d\n", player->hand_left.card.rank, player->hand_left.card.suit);
+        printf("Player %d chose their left hand and discarded the %zu of %d\n", player->int_player_number, player->hand_left.card.rank, player->hand_left.card.suit);
         player->hand_left.bool_is_empty = true;
         player->hand_left.card = temp;
     }
@@ -223,7 +230,7 @@ void discard_card(struct Player *player)
     {
         //place the card at the bottom of the deck
         //empty the player's right hand
-        printf("The Player chose their right hand and discarded the %zu of %d\n", player->hand_right.card.rank, player->hand_right.card.suit);
+        printf("Player %d chose their right hand and discarded the %zu of %d\n", player->int_player_number, player->hand_right.card.rank, player->hand_right.card.suit);
         player->hand_right.bool_is_empty = true;
         player->hand_right.card = temp;
     }
@@ -238,7 +245,9 @@ void compare_cards(struct Player *player)
     if(player->hand_left.card.rank == greasy_card.rank)
     {
         END_GAME = true;
-        printf("The match card was the player's %zu of %d and the greasy card was %zu of %d\n", player->hand_left.card.rank, player->hand_left.card.suit, greasy_card.rank, greasy_card.suit);
+        printf("Player %d's card, ", player->int_player_number);
+        printf("%zu of %d, matches the greasy card, ",  player->hand_left.card.rank, player->hand_left.card.suit);
+        printf("%zu of %d\n", greasy_card.rank, greasy_card.suit);
         return;
     }
 
@@ -246,22 +255,58 @@ void compare_cards(struct Player *player)
     if(player->hand_right.card.rank == greasy_card.rank)
     {
         END_GAME = true;
-        printf("The match card was the player's %zu of %d and the greasy card was %zu of %d\n", player->hand_right.card.rank, player->hand_right.card.suit, greasy_card.rank, greasy_card.suit);
+        printf("Player %d's card, ", player->int_player_number);
+        printf("%zu of %d matches the greasy card, ", player->hand_right.card.rank, player->hand_right.card.suit);
+        printf("%zu of %d\n", greasy_card.rank, greasy_card.suit);
         return;
     }
 
     printf("The player has checked, there was no matches\n");
 }
 
+void *player_turn(void *arg)
+{
+    struct Player *player = (struct Player *)arg;
+    while(!END_GAME)
+    {
+        pthread_mutex_lock(&mutex);
+
+        //wait for your turn
+        while(current_turn != player->int_player_number && !END_GAME)
+        {
+            pthread_cond_wait(&cond, &mutex);
+        }
+
+        if(END_GAME)
+        {
+            pthread_mutex_unlock(&mutex);
+            break;
+        }
+
+        printf("Player %zu's turn\n", player->int_player_number);
+        draw_card(player);
+        compare_cards(player);
+        
+        if(!END_GAME)
+        {
+            discard_card(player);
+        }
+
+        current_turn = (current_turn+1) % NUM_PLAYERS;
+        pthread_cond_broadcast(&cond);
+
+        pthread_mutex_unlock(&mutex);
+    }
+
+    pthread_exit(NULL);
+}
+
 //n players, m chips per bag, o seed for randomizer
 int main()
 {
-    struct Player players[1];
-
-    //player intialization
-    players[0].hand_left.bool_is_empty = true;
-    players[0].hand_right.bool_is_empty = true;
-    players[0].bool_is_dealer = 1;
+    NUM_PLAYERS = 2;
+    pthread_t threads[NUM_PLAYERS];
+    struct Player players[NUM_PLAYERS];
 
     int int_max_deck_size = 4 * 13;
 
@@ -269,20 +314,31 @@ int main()
     srand(time(NULL));
 
     intialize_deck(card_deck, 4, 13);
-    shuffle_deck(card_deck, int_max_deck_size);
-    stack_card_deck(card_deck, int_max_deck_size);
-    declare_greasy_card();
+    shuffle_deck(card_deck, 52);
+    stack_card_deck(card_deck, 52);
+    
+    //randomly decide dealer later
+    declare_greasy_card(&players[0]);
     
     //dealt a card
     draw_card(&players[0]);
-    
 
-    while(!END_GAME)
+    for(int i = 0; i < NUM_PLAYERS; i++)
     {
-        draw_card(&players[0]);
-        compare_cards(&players[0]);
-        discard_card(&players[0]);
+        players[i].hand_left.bool_is_empty = true;
+        players[i].hand_right.bool_is_empty = true;
+        players[i].bool_is_dealer == (i == 0);
+        players[i].int_player_number = i;
+
+        pthread_create(&threads[i], NULL, player_turn, &players[i]);
     }
+    
+    for(int i = 0; i < NUM_PLAYERS; i++)
+    {
+        pthread_join(threads[i], NULL);
+    }
+
+    printf("Game Over!\n");
     
     return 0;
 }
