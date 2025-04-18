@@ -142,23 +142,11 @@ void stack_card_deck(struct Card deck[], int int_max_deck_size)
     }
 }
 
-void print_stack_card_deck()
-{
-    struct Card card_current;
-       
-    while(&stack_deck != NULL)
-    {
-        top(stack_deck, &card_current, sizeof(struct Card));
-        printf("%d of %zu\n", card_current.suit, card_current.rank);
-        pop(&stack_deck);
-    }
-}
-
 void declare_greasy_card()
 {
     top(stack_deck, &greasy_card, sizeof(struct Card));
     pop(&stack_deck);
-    printf("The Greasy card is %d of %zu\n", greasy_card.suit, greasy_card.rank);
+    printf("The Greasy card is %zu of %d\n", greasy_card.rank, greasy_card.suit);
 }
 
 void draw_card(struct Player *player)
@@ -177,7 +165,7 @@ void draw_card(struct Player *player)
             top(stack_deck, &player->hand_left.card, sizeof(struct Card));
             pop(&stack_deck);
             player->hand_left.bool_is_empty = false;
-            printf("and they chose to place their card in their left hand, they placed the %d of %zu...\n", player->hand_left.card.suit, player->hand_left.card.rank);
+            printf("and they chose to place their card in their left hand, they placed the %zu of %d...\n", player->hand_left.card.rank, player->hand_left.card.suit);
         }
 
         //otherwise, that means right is empty, so we give them the card
@@ -186,7 +174,7 @@ void draw_card(struct Player *player)
             top(stack_deck, &player->hand_right.card, sizeof(struct Card));
             pop(&stack_deck);
             player->hand_right.bool_is_empty = false;
-            printf("and wanted to place their card in their left hand, but it was full, so they placed that card in their right hand, they placed the %d of %zu\n", player->hand_right.card.suit, player->hand_right.card.rank);
+            printf("and wanted to place their card in their left hand, but it was full, so they placed that card in their right hand, they placed the %zu of %d\n", player->hand_right.card.rank, player->hand_right.card.suit);
         }
     }
 
@@ -199,7 +187,7 @@ void draw_card(struct Player *player)
             top(stack_deck, &player->hand_right.card, sizeof(struct Card));
             pop(&stack_deck);
             player->hand_right.bool_is_empty = false;
-            printf("and they chose to place their card in their right hand, they placed the %d of %zu...\n", player->hand_right.card.suit, player->hand_right.card.rank);
+            printf("and they chose to place their card in their right hand, they placed the %zu of %d...\n", player->hand_right.card.rank, player->hand_right.card.suit);
         }
 
         //otherwise, that means right is empty, so we give them the card
@@ -208,7 +196,7 @@ void draw_card(struct Player *player)
             top(stack_deck, &player->hand_left.card, sizeof(struct Card));
             pop(&stack_deck);
             player->hand_left.bool_is_empty = false;
-            printf("and wanted to place their card in their right hand, but it was full, so they placed that card in their left hand, they placed the %d of %zu\n", player->hand_left.card.suit, player->hand_left.card.rank);            
+            printf("and wanted to place their card in their right hand, but it was full, so they placed that card in their left hand, they placed the %zu of %d\n", player->hand_left.card.rank, player->hand_left.card.suit);
         }
     }
 }
@@ -226,7 +214,7 @@ void discard_card(struct Player *player)
     {
         //place the card at the bottom of the deck
         //empty the player's left hand
-        printf("The Player chose their left hand and discarded the %d of %zu\n", player->hand_left.card.suit, player->hand_left.card.rank);
+        printf("The Player chose their left hand and discarded the %zu of %d\n", player->hand_left.card.rank, player->hand_left.card.suit);
         player->hand_left.bool_is_empty = true;
         player->hand_left.card = temp;
     }
@@ -235,7 +223,7 @@ void discard_card(struct Player *player)
     {
         //place the card at the bottom of the deck
         //empty the player's right hand
-        printf("The Player chose their right hand and discarded the %d of %zu\n", player->hand_right.card.suit, player->hand_right.card.rank);
+        printf("The Player chose their right hand and discarded the %zu of %d\n", player->hand_right.card.rank, player->hand_right.card.suit);
         player->hand_right.bool_is_empty = true;
         player->hand_right.card = temp;
     }
@@ -250,7 +238,7 @@ void compare_cards(struct Player *player)
     if(player->hand_left.card.rank == greasy_card.rank)
     {
         END_GAME = true;
-        printf("The match card was the player's %d of %zu and the greasy card was %d of %zu\n", player->hand_left.card.suit, player->hand_left.card.rank, greasy_card.suit, greasy_card.rank);
+        printf("The match card was the player's %zu of %d and the greasy card was %zu of %d\n", player->hand_left.card.rank, player->hand_left.card.suit, greasy_card.rank, greasy_card.suit);
         return;
     }
 
@@ -258,7 +246,7 @@ void compare_cards(struct Player *player)
     if(player->hand_right.card.rank == greasy_card.rank)
     {
         END_GAME = true;
-        printf("The match card was the player's %d of %zu and the greasy card was %d of %zu\n", player->hand_right.card.suit, player->hand_right.card.rank, greasy_card.suit, greasy_card.rank);
+        printf("The match card was the player's %zu of %d and the greasy card was %zu of %d\n", player->hand_right.card.rank, player->hand_right.card.suit, greasy_card.rank, greasy_card.suit);
         return;
     }
 
@@ -296,9 +284,5 @@ int main()
         discard_card(&players[0]);
     }
     
-    
-    
-    //print_stack_card_deck(&stack_deck);
-
     return 0;
 }
