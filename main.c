@@ -46,7 +46,7 @@ void push(struct Node **top, void *data, size_t data_size)
 //remove top element
 void pop(struct Node **top, void *data_out, size_t data_size)
 {
-    //check if the top is empty, exit if empty
+    //exit if top is empty
     if(*top == NULL)
     {
         return;
@@ -62,9 +62,15 @@ void pop(struct Node **top, void *data_out, size_t data_size)
 }
 
 //accesses top element
-void top(struct Node **top, void *data, size_t data_size)
+void top(struct Node *top, void *data_out, size_t data_size)
 {
+    //exit if top is empty
+    if(top == NULL)
+    {
+        return;
+    }
 
+    memcpy(data_out , top->data, data_size);
 }
 
 void intialize_deck(struct Card deck[], int int_max_suit, int int_max_rank)
