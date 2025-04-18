@@ -19,16 +19,18 @@ struct Card
     unsigned int rank;
 };
 
+//generic linked list
 struct Node
 {
     void *data;
     struct Node *next;
 };
 
-void stack_push(struct Node **top, void *data, size_t data_size)
+//insert element into list
+void push(struct Node **top, void *data, size_t data_size)
 {
     //create a new node with memory size a Node
-    struct Node * new_node = (struct Node *) mallac(sizeof(struct Node));
+    struct Node *new_node = (struct Node *) malloc(sizeof(struct Node));
     
     //allocate new_nodes data's memory equal to memory size of Card
     new_node->data = malloc(data_size);
@@ -41,19 +43,33 @@ void stack_push(struct Node **top, void *data, size_t data_size)
     *top = new_node;
 }
 
-void stack_pop()
+//remove top element
+void pop(struct Node **top)
 {
+    //exit if top is empty
+    if(*top == NULL)
+    {
+        return;
+    }
 
+    struct Node * temp = *top;
+    *top = (*top)->next;
+    
+    //frees up memory
+    free(temp->data);
+    free(temp);
 }
 
-void stack_top()
+//accesses top element
+void top(struct Node *top, void *data_out, size_t data_size)
 {
+    //exit if top is empty
+    if(top == NULL)
+    {
+        return;
+    }
 
-}
-
-void stack_last()
-{
-
+    memcpy(data_out , top->data, data_size);
 }
 
 void intialize_deck(struct Card deck[], int int_max_suit, int int_max_rank)
@@ -67,14 +83,6 @@ void intialize_deck(struct Card deck[], int int_max_suit, int int_max_rank)
             deck[int_card_count].rank = j;
             int_card_count++;
         }
-    }
-}
-
-void print_deck(struct Card deck[])
-{
-    for(int i = 0; i < 52; i++)
-    {
-        printf("%u of %u\n", deck[i].suit, deck[i].rank);
     }
 }
 
@@ -97,29 +105,44 @@ void shuffle_deck(struct Card deck[], int int_deck_size)
     }
 }
 
-void stack_card_deck(struct card deck[])
+//uses stack functions to 
+void stack_card_deck(struct Node **stack_deck, struct Card deck[], int int_max_deck_size)
 {
-
+    for(int i = 0; i < int_max_deck_size; i++)
+    {
+        push(stack_deck, &deck[i], sizeof(struct Card));
+    }
 }
 
-//n players, m chips per bag, o seed randomizer
+void print_stack_card_deck(struct Node **stack_deck)
+{
+    struct Card card_current;
+       
+    while(*stack_deck != NULL)
+    {
+        top(*stack_deck, &card_current, sizeof(struct Card));
+        printf("%u of %u\n", card_current.suit, card_current.rank);
+        pop(stack_deck);
+    }
+}
+
+//n players, m chips per bag, o seed for randomizer
 int main()
 {
     int int_max_deck_size = 4 * 13;
-    struct Card card_deck[int_max_deck_size];
+    struct Card card_deck[int_max_deck_size];       //much easier to shuffle while an array
+    struct Node *stack_deck = NULL;                 //much easier to deal with a deck as a linked list/stack
 
-    //seed's randomizer
+    //seed's randomizer, NULL for the mean time
     srand(time(NULL));
 
-    printf("Before Shuffle\n");
-    intialize_deck(card_deck, 4,13);
-    print_deck(card_deck);
-
-    printf("\n");
-    printf("\n");
-    printf("After Shuffle\n");
+    intialize_deck(card_deck, 4, 13);
     shuffle_deck(card_deck, int_max_deck_size);
-    print_deck(card_deck);
+
+    //printf("here in main\n");
+
+    stack_card_deck(&stack_deck, card_deck, int_max_deck_size);
+    print_stack_card_deck(&stack_deck);
 
     return 0;
 }
