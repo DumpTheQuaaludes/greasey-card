@@ -46,7 +46,7 @@ struct Player
 //global declarations
 struct Card greasy_card;
 struct Node *stack_deck = NULL;     //much easier to deal with a deck as a linked list/stack
-struct Card card_deck[52];            //much easier to shuffle while an array
+struct Card card_deck[52];          //much easier to shuffle while an array
 int INT_CHIPS_IN_BAG = 50;
 int INT_BAGS_EATEN = 0;
 int END_GAME = false; 
@@ -73,9 +73,36 @@ void push(struct Node **top, void *data, size_t data_size)
     *top = new_node;
 }
 
-void push_back(struct Node **back, void *data, size_t data_size)
+//this one busted my balls, hard...
+void push_back(struct Node **top, void *data, size_t data_size)
 {
+    //create a new node with memory size a Node
+    struct Node *new_node = (struct Node *) malloc(sizeof(struct Node));
+    
+    //allocate new_nodes data's memory equal to memory size of Card
+    new_node->data = malloc(data_size);
 
+    //copy the new nodes data to the 
+    memcpy(new_node->data, data, data_size);
+
+    new_node->next = NULL;
+
+    //if list is empty, new node becomes the top
+    if (*top == NULL)
+    {
+        *top = new_node;
+        return;
+    }
+
+    //traverse tot he end
+    struct Node *current = *top;
+    while(current->next != NULL)
+    {
+        current = current->next;
+    }
+
+    //append the new node
+    current->next = new_node;
 }
 
 //remove top element
@@ -221,7 +248,7 @@ void discard_card(struct Player *player)
     {
         //place the card at the bottom of the deck
         //empty the player's left hand
-        printf("Player %d chose their left hand and discarded the %zu of %d\n", player->int_player_number, player->hand_left.card.rank, player->hand_left.card.suit);
+        printf("Player %d chose their left hand and discarded the %zu of %d ", player->int_player_number, player->hand_left.card.rank, player->hand_left.card.suit);
         player->hand_left.bool_is_empty = true;
         player->hand_left.card = temp;
     }
@@ -230,12 +257,12 @@ void discard_card(struct Player *player)
     {
         //place the card at the bottom of the deck
         //empty the player's right hand
-        printf("Player %d chose their right hand and discarded the %zu of %d\n", player->int_player_number, player->hand_right.card.rank, player->hand_right.card.suit);
+        printf("Player %d chose their right hand and discarded the %zu of %d ", player->int_player_number, player->hand_right.card.rank, player->hand_right.card.suit);
         player->hand_right.bool_is_empty = true;
         player->hand_right.card = temp;
     }
 
-    
+    printf("at the bottom of the deck\n");
 }
 
 void compare_cards(struct Player *player)
