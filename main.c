@@ -36,8 +36,8 @@ struct Hand
 
 struct Player
 {
-    struct Hand left_hand;
-    struct Hand right_hand;
+    struct Hand hand_left;
+    struct Hand hand_right;
     int int_chips_to_eat;
     int int_player_number;
     int bool_is_dealer;
@@ -156,18 +156,79 @@ void declare_greasy_card()
 
 void draw_card(struct Player player)
 {
-    if(player.left_hand.bool_is_empty == 0)
+    //choose a hand, left or right hand
+    //give that hand a card
+    int int_random_hand = rand() % 2; // 0 = left, 1 = right
+
+    //random declares left
+    if(int_random_hand == 0)
     {
-        //top
+        //if left is empty, give card
+        if(player.hand_left.bool_is_empty)
+        {
+            top(stack_deck, &player.hand_left, sizeof(struct Card));
+            pop(&stack_deck);
+            player.hand_left.bool_is_empty = 0;
+        }
+
+        //otherwise, that means right is empty, so we give them the card
+        else
+        {
+            top(stack_deck, &player.hand_right, sizeof(struct Card));
+            pop(&stack_deck);
+            player.hand_right.bool_is_empty = 0;
+        }
     }
+
+    //random declares right
+    else if(int_random_hand == 1)
+    {
+        //if right is empty, give card
+        if(player.hand_right.bool_is_empty)
+        {
+            top(stack_deck, &player.hand_right, sizeof(struct Card));
+            pop(&stack_deck);
+            player.hand_right.bool_is_empty = 0;
+        }
+
+        //otherwise, that means right is empty, so we give them the card
+        else
+        {
+            top(stack_deck, &player.hand_left, sizeof(struct Card));
+            pop(&stack_deck);
+            player.hand_left.bool_is_empty = 0;
+        }
+    }
+}
+
+void discard_card(struct Player player)
+{
+    //choose a hand, left or right hand
+    //discard that card, from hand
+    int int_random_hand = rand() % 2; // 0 = left, 1 = right
+
+    //discard the left hand
+    if(int_random_hand == 0 && !player.hand_left.bool_is_empty)
+    {
+        //place the card at the bottom of the deck
+        //empty the player's left hand
+    }
+
+    if(int_random_hand && !player.hand_right.bool_is_empty)
 }
 
 //n players, m chips per bag, o seed for randomizer
 int main()
 {
-    int players = 1;
+    struct Player players[1];
+    players[0].hand_left.bool_is_empty = 1;
+    players[0].hand_right.bool_is_empty = 1;
+    players[0].bool_is_dealer = 1;
+
+
     int int_max_deck_size = 4 * 13;
     struct Card card_deck[int_max_deck_size];       //much easier to shuffle while an array
+    
     
 
     //seed's randomizer, NULL for the mean time
@@ -180,7 +241,7 @@ int main()
     
     while(END_GAME)
     {
-
+        draw_card()
     }
     
     
