@@ -13,13 +13,50 @@ int INT_BAGS_EATEN = 0;
 //0=spades, 1=heart, 2=clubs, 3=diamonds
 //ranks = 13
 // a=1,2,3,4,5,6,7,8,9,10, j=11, q=12,k=13
-struct card
+struct Card
 {
     unsigned int suit;
     unsigned int rank;
 };
 
-void intialize_deck(struct card deck[], int int_max_suit, int int_max_rank)
+struct Node
+{
+    void *data;
+    struct Node *next;
+};
+
+void stack_push(struct Node **top, void *data, size_t data_size)
+{
+    //create a new node with memory size a Node
+    struct Node * new_node = (struct Node *) mallac(sizeof(struct Node));
+    
+    //allocate new_nodes data's memory equal to memory size of Card
+    new_node->data = malloc(data_size);
+
+    //copy the new nodes data to the 
+    memcpy(new_node->data, data, data_size);
+
+    //updates stack by moving the value down
+    new_node->next = *top;
+    *top = new_node;
+}
+
+void stack_pop()
+{
+
+}
+
+void stack_top()
+{
+
+}
+
+void stack_last()
+{
+
+}
+
+void intialize_deck(struct Card deck[], int int_max_suit, int int_max_rank)
 {
     int int_card_count = 0;
     for(int i = 0; i < int_max_suit; i++)
@@ -33,7 +70,7 @@ void intialize_deck(struct card deck[], int int_max_suit, int int_max_rank)
     }
 }
 
-void print_deck(struct card deck[])
+void print_deck(struct Card deck[])
 {
     for(int i = 0; i < 52; i++)
     {
@@ -50,21 +87,26 @@ void swap(void *initial_position, void *new_position, size_t size)
     memcpy(new_position, temp, size);
 }
 
-void shuffle_deck(struct card deck[], int int_deck_size)
+void shuffle_deck(struct Card deck[], int int_deck_size)
 {
     for(int i=0; i < int_deck_size; i++)
     {
         int int_new_position = i + (rand() % (int_deck_size - i));
         
-        swap(&deck[i], &deck[int_new_position], sizeof(struct card));
+        swap(&deck[i], &deck[int_new_position], sizeof(struct Card));
     }
+}
+
+void stack_card_deck(struct card deck[])
+{
+
 }
 
 //n players, m chips per bag, o seed randomizer
 int main()
 {
     int int_max_deck_size = 4 * 13;
-    struct card card_deck[int_max_deck_size];
+    struct Card card_deck[int_max_deck_size];
 
     //seed's randomizer
     srand(time(NULL));
